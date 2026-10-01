@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* When dir="rtl", apply Cairo font as primary sans and adjust typography */
+  html[dir="rtl"] body {
+    font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  }
+
+  html[dir="ltr"] body {
+    font-family: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom luxury scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #F0ECE4;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #C5A880;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9E7E52;
+  }
+}
+
+@layer utilities {
+  /* Subtle luxury gold text gradient */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #D4AF37 0%, #C5A880 50%, #9E7E52 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Smooth image scale on card hover */
+  .img-zoom {
+    transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .group:hover .img-zoom {
+    transform: scale(1.06);
+  }
+}
+
