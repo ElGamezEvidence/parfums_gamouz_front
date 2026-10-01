@@ -3,10 +3,16 @@ import ReactDOM from 'react-dom/client';
 import './i18n';
 import './index.css';
 import App from './App';
+import { initApiConfig } from './config/apiBaseUrl.js';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+async function bootstrap() {
+  await initApiConfig();
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
+
+bootstrap();
 

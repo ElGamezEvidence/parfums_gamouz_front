@@ -1,9 +1,7 @@
 import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { getApiBaseUrl } from '../config/apiBaseUrl.js';
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
   withCredentials: true, // Send HttpOnly cookies
   headers: {
     'Content-Type': 'application/json',
@@ -15,6 +13,10 @@ export const api = axios.create({
 // Request interceptor: attach bearer token from localStorage if present
 api.interceptors.request.use(
   (config) => {
+    const base = getApiBaseUrl();
+    if (base) {
+      config.baseURL = base;
+    }
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
