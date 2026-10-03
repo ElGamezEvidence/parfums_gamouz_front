@@ -12,6 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import { applyImageFallback } from '../../utils/productImages';
 
 function slugifyFromName(name) {
   return (
@@ -803,10 +804,7 @@ export const AdminProductForm = () => {
                     src={img.url}
                     alt=""
                     className="w-full aspect-[3/4] object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23333" width="200" height="200"/%3E%3Ctext fill="%23888" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="12"%3EImage%3C/text%3E%3C/svg%3E';
-                    }}
+                    onError={applyImageFallback}
                   />
                   <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 p-2 bg-gradient-to-t from-black/90 to-transparent">
                     <button
@@ -828,6 +826,11 @@ export const AdminProductForm = () => {
                   {img.isPrimary && (
                     <span className="absolute top-2 start-2 text-[9px] uppercase tracking-wider bg-[#C5A880] text-black px-2 py-0.5 font-semibold">
                       Principale
+                    </span>
+                  )}
+                  {img.url?.includes('/uploads/products/') && (
+                    <span className="absolute top-2 end-2 text-[8px] bg-red-900/80 text-red-100 px-1.5 py-0.5 max-w-[90%] truncate">
+                      Fichier Railway — utiliser Cloudinary si 404
                     </span>
                   )}
                 </div>

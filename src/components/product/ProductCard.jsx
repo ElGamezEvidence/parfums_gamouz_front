@@ -7,7 +7,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
 import { Price } from '../common/Price';
 import { Rating } from '../common/Rating';
-import { FALLBACK_IMAGE } from '../../data/products';
+import { applyImageFallback } from '../../utils/productImages';
 
 export const ProductCard = ({ product }) => {
   const { language, t } = useLanguage();
@@ -71,7 +71,10 @@ export const ProductCard = ({ product }) => {
             src={imgSrc}
             alt={productName}
             loading="lazy"
-            onError={() => setImgSrc(FALLBACK_IMAGE)}
+            onError={(e) => {
+              applyImageFallback(e);
+              setImgSrc(e.currentTarget.src);
+            }}
             className="w-full h-full object-cover img-zoom"
           />
         </Link>

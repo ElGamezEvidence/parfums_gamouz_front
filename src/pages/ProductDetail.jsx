@@ -25,7 +25,7 @@ import { Button } from '../components/common/Button';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { LoadingState } from '../components/common/LoadingState';
 import { getProductOrderWhatsAppUrl } from '../utils/whatsapp';
-import { FALLBACK_IMAGE } from '../data/products';
+import { PRODUCT_IMAGE_PLACEHOLDER, applyImageFallback } from '../utils/productImages';
 
 export const ProductDetail = () => {
   const { id } = useParams();
@@ -52,7 +52,8 @@ export const ProductDetail = () => {
         if (found) {
           setProduct(found);
           setSelectedVolume(found.defaultVolume || '50ml');
-          setActiveImage(found.image);
+          const gallery = (found.images || []).filter(Boolean);
+          setActiveImage(gallery[0] || found.image || PRODUCT_IMAGE_PLACEHOLDER);
           const related = await productService.getRelatedProducts(found.id, found.category, 4);
           setRelatedProducts(related);
         }
@@ -137,7 +138,7 @@ export const ProductDetail = () => {
             <img
               src={activeImage}
               alt={productName}
-              onError={() => setActiveImage(FALLBACK_IMAGE)}
+              onError={applyImageFallback}
               className="w-full h-full object-cover transition-all duration-500"
             />
 
@@ -182,7 +183,12 @@ export const ProductDetail = () => {
                       : 'border-brand-black/15 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={applyImageFallback}
+                  />
                 </button>
               ))}
             </div>

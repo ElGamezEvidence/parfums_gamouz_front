@@ -8,6 +8,8 @@ import {
   Edit,
   Eye,
   Trash2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
@@ -18,6 +20,7 @@ export const AdminProducts = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deletingId, setDeletingId] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -45,17 +48,25 @@ export const AdminProducts = () => {
     loadProducts();
   };
 
-  const handleDelete = async (product) => {
-    const confirmed = window.confirm(
-      `Supprimer définitivement « ${product.name} » (SKU ${product.sku}) ?\n\nCette action est irréversible. Les commandes passées conservent l'historique sans lien produit.`
-    );
-    if (!confirmed) return;
+  const openDeleteModal = (product) => {
+    setProductToDelete(product);
+    setError('');
+  };
 
-    setDeletingId(product.id);
+  const closeDeleteModal = () => {
+    if (deletingId) return;
+    setProductToDelete(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
+    setDeletingId(productToDelete.id);
     setError('');
     try {
-      await adminService.deleteProduct(product.id);
-      setProducts((prev) => prev.filter((item) => item.id !== product.id));
+      await adminService.deleteProduct(productToDelete.id);
+      setProducts((prev) => prev.filter((item) => item.id !== productToDelete.id));
+      setProductToDelete(null);
     } catch (err) {
       const msg =
         err.response?.data?.error?.message ||
@@ -236,7 +247,7 @@ export const AdminProducts = () => {
                           type="button"
                           title="Supprimer"
                           disabled={deletingId === p.id}
-                          onClick={() => handleDelete(p)}
+                          onClick={() => openDeleteModal(p)}
                           className="p-1.5 text-[#888] hover:text-red-400 transition-colors disabled:opacity-40"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -250,6 +261,80 @@ export const AdminProducts = () => {
           </div>
         )}
       </div>
+
+      {/* Modal — confirmation suppression */}
+      {productToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-product-title"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="bg-[#141414] border border-[#2A2A2A] w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-red-500/10 border border-red-500/30 shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h2
+                    id="delete-product-title"
+                    className="font-serif text-lg text-white"
+                  >
+                    Supprimer ce parfum ?
+                  </h2>
+                  <p className="text-sm text-[#ECE7DF] mt-2 font-medium">
+                    {productToDelete.name}
+                  </p>
+                  <p className="font-mono text-[10px] text-[#8E8881] mt-1">
+                    SKU {productToDelete.sku} · /{productToDelete.slug}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#A0988E] leading-relaxed border-l-2 border-red-500/40 ps-3">
+                Cette action est{' '}
+                <span className="text-red-300 font-medium">définitive</span>. Le produit,
+                ses photos et ses contenances seront retirés du catalogue. Les commandes
+                déjà passées conservent leur historique.
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-6 py-4 bg-[#0f0f0f] border-t border-[#2A2A2A]">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={Boolean(deletingId)}
+                className="px-4 py-2.5 min-h-[44px] bg-[#1C1C1C] border border-[#333] text-[#ECE7DF] text-xs uppercase tracking-wider hover:bg-[#252525] disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deletingId === productToDelete.id}
+                className="px-4 py-2.5 min-h-[44px] bg-red-600 hover:bg-red-500 text-white text-xs uppercase tracking-wider font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {deletingId === productToDelete.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Suppression…
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Supprimer définitivement
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

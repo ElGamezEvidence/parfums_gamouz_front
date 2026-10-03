@@ -2,8 +2,11 @@ import api from './api';
 import { products as mockProducts } from '../data/products';
 import { normalizeProductFromApi, normalizeProductsFromApi } from '../utils/productNormalizer';
 
+/** Catalogue embarqué uniquement en dev local explicite — jamais sur Netlify prod. */
+const USE_EMBEDDED_MOCK =
+  import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_CATALOG === 'true';
+
 export const productService = {
-  // Get all products with filters, sorting and pagination
   async getProducts(filters = {}) {
     try {
       const locale = localStorage.getItem('gamouze_lang') || 'fr';
@@ -23,57 +26,16 @@ export const productService = {
       if (res.data?.data?.items) {
         return normalizeProductsFromApi(res.data.data.items);
       }
+      return [];
     } catch (err) {
-      console.warn('API /products unreachable, falling back to embedded catalog', err.message);
-    }
-
-    // Graceful fallback to rich embedded dataset
-    let result = [...mockProducts];
-    if (filters.category && filters.category !== 'all') {
-      result = result.filter((p) => p.category === filters.category);
-    }
-    if (filters.badge) {
-      if (filters.badge === 'bestSeller') result = result.filter((p) => p.isBestSeller);
-      else if (filters.badge === 'isNew') result = result.filter((p) => p.isNew);
-      else if (filters.badge === 'sale') result = result.filter((p) => p.oldPrice && p.oldPrice > p.price);
-    }
-    if (filters.minPrice !== undefined) {
-      result = result.filter((p) => p.price >= filters.minPrice);
-    }
-    if (filters.maxPrice !== undefined) {
-      result = result.filter((p) => p.price <= filters.maxPrice);
-    }
-    if (filters.query && filters.query.trim()) {
-      const q = filters.query.toLowerCase().trim();
-      result = result.filter((p) => {
-        const matchName =
-          p.name.fr?.toLowerCase().includes(q) ||
-          p.name.en?.toLowerCase().includes(q) ||
-          p.name.ar?.toLowerCase().includes(q);
-        const matchCat = p.category?.toLowerCase().includes(q);
-        return matchName || matchCat;
-      });
-    }
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case 'price-asc':
-          result.sort((a, b) => a.price - b.price);
-          break;
-        case 'price-desc':
-          result.sort((a, b) => b.price - a.price);
-          break;
-        case 'newest':
-          result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-          break;
-        case 'popularity':
-          result.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
-          break;
+      console.warn('API /products unreachable', err.message);
+      if (USE_EMBEDDED_MOCK) {
+        return filterMockProducts(mockProducts, filters);
       }
+      return [];
     }
-    return result;
   },
 
-  // Get single product by slug or numeric ID
   async getProductBySlug(slug) {
     try {
       const locale = localStorage.getItem('gamouze_lang') || 'fr';
@@ -82,18 +44,21 @@ export const productService = {
         return normalizeProductFromApi(res.data.data);
       }
     } catch (err) {
-      console.warn(`API /products/${slug} unavailable, trying local fallback`, err.message);
+      console.warn(`API /products/${slug} unavailable`, err.message);
     }
 
-    const found = mockProducts.find((p) => p.slug === slug || String(p.id) === String(slug));
-    return found || null;
+    if (USE_EMBEDDED_MOCK) {
+      return (
+        mockProducts.find((p) => p.slug === slug || String(p.id) === String(slug)) || null
+      );
+    }
+    return null;
   },
 
   async getProductById(id) {
     return this.getProductBySlug(id);
   },
 
-  // Get featured products
   async getFeaturedProducts(limit = 4) {
     try {
       const locale = localStorage.getItem('gamouze_lang') || 'fr';
@@ -102,24 +67,24 @@ export const productService = {
         return normalizeProductsFromApi(res.data.data);
       }
     } catch (err) {
-      console.warn('API /products/featured unavailable, using fallback', err.message);
+      console.warn('API /products/featured unavailable', err.message);
     }
-    return mockProducts.filter((p) => p.isFeatured).slice(0, limit);
+    if (USE_EMBEDDED_MOCK) {
+      return mockProducts.filter((p) => p.isFeatured).slice(0, limit);
+    }
+    return [];
   },
 
-  // Get best sellers
   async getBestSellers(limit = 4) {
     const all = await this.getProducts({ badge: 'bestSeller', limit });
     return all.slice(0, limit);
   },
 
-  // Get new arrivals
   async getNewArrivals(limit = 4) {
     const all = await this.getProducts({ badge: 'isNew', limit });
     return all.slice(0, limit);
   },
 
-  // Get related products
   async getRelatedProducts(currentProductId, category, limit = 4) {
     const all = await this.getProducts({ category });
     return all
@@ -127,3 +92,53 @@ export const productService = {
       .slice(0, limit);
   },
 };
+
+function filterMockProducts(list, filters) {
+  let result = [...list];
+  if (filters.category && filters.category !== 'all') {
+    result = result.filter((p) => p.category === filters.category);
+  }
+  if (filters.badge) {
+    if (filters.badge === 'bestSeller') result = result.filter((p) => p.isBestSeller);
+    else if (filters.badge === 'isNew') result = result.filter((p) => p.isNew);
+    else if (filters.badge === 'sale') {
+      result = result.filter((p) => p.oldPrice && p.oldPrice > p.price);
+    }
+  }
+  if (filters.minPrice !== undefined) {
+    result = result.filter((p) => p.price >= filters.minPrice);
+  }
+  if (filters.maxPrice !== undefined) {
+    result = result.filter((p) => p.price <= filters.maxPrice);
+  }
+  if (filters.query && filters.query.trim()) {
+    const q = filters.query.toLowerCase().trim();
+    result = result.filter((p) => {
+      const matchName =
+        p.name.fr?.toLowerCase().includes(q) ||
+        p.name.en?.toLowerCase().includes(q) ||
+        p.name.ar?.toLowerCase().includes(q);
+      const matchCat = p.category?.toLowerCase().includes(q);
+      return matchName || matchCat;
+    });
+  }
+  if (filters.sortBy) {
+    switch (filters.sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+        break;
+      case 'popularity':
+        result.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
+        break;
+      default:
+        break;
+    }
+  }
+  return result;
+}
