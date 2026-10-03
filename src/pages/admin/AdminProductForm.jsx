@@ -13,6 +13,34 @@ import {
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
+function slugifyFromName(name) {
+  return (
+    String(name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 72) || ''
+  );
+}
+
+function resolveProductCatalogFields({ sku, slug, basePrice, translations, variants }) {
+  const nameFr = translations.fr.name.trim();
+  const finalSlug = slug.trim().toLowerCase() || slugifyFromName(nameFr);
+  const slugKey = finalSlug || `produit-${Date.now()}`;
+  const finalSku =
+    sku.trim().toUpperCase() || slugKey.replace(/-/g, '_').toUpperCase().slice(0, 48);
+  const defaultVariant = variants.find((v) => v.isDefault) || variants[0];
+  const parsedBase = basePrice !== '' && basePrice != null ? Number(basePrice) : NaN;
+  const finalBasePrice = !Number.isNaN(parsedBase)
+    ? parsedBase
+    : defaultVariant?.price
+      ? Number(defaultVariant.price)
+      : 0;
+  return { finalSku, finalSlug: slugKey, finalBasePrice };
+}
+
 export const AdminProductForm = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -185,11 +213,6 @@ export const AdminProductForm = () => {
     setError('');
     setSuccess('');
 
-    if (!sku.trim() || !slug.trim() || !basePrice) {
-      setError('Veuillez remplir le SKU, le slug et le prix de base.');
-      return;
-    }
-
     if (!translations.fr.name.trim()) {
       setError('Le nom du parfum en français est requis.');
       return;
@@ -197,10 +220,18 @@ export const AdminProductForm = () => {
 
     setLoading(true);
     try {
+      const { finalSku, finalSlug, finalBasePrice } = resolveProductCatalogFields({
+        sku,
+        slug,
+        basePrice,
+        translations,
+        variants,
+      });
+
       const payload = {
-        sku: sku.trim().toUpperCase(),
-        slug: slug.trim().toLowerCase(),
-        basePrice: Number(basePrice),
+        sku: finalSku,
+        slug: finalSlug,
+        basePrice: finalBasePrice,
         salePrice: salePrice ? Number(salePrice) : null,
         genderCategory,
         status,
@@ -212,7 +243,7 @@ export const AdminProductForm = () => {
           volume: v.volume,
           price: Number(v.price),
           salePrice: v.salePrice ? Number(v.salePrice) : null,
-          sku: v.sku.trim() ? v.sku.trim().toUpperCase() : `${sku.trim().toUpperCase()}-${v.volume}`,
+          sku: v.sku.trim() ? v.sku.trim().toUpperCase() : `${finalSku}-${v.volume}`,
           stockQuantity: Number(v.stockQuantity) || 0,
           isDefault: v.isDefault,
         })),
@@ -299,7 +330,7 @@ export const AdminProductForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-xs font-medium text-[#C5A880] mb-2 uppercase tracking-wider">
-                Référence SKU *
+                Référence SKU <span className="text-[#666]">(auto si vide)</span>
               </label>
               <input
                 type="text"
@@ -307,13 +338,12 @@ export const AdminProductForm = () => {
                 onChange={(e) => setSku(e.target.value)}
                 placeholder="GZ-MAJESTIC"
                 className="w-full bg-[#1C1C1C] border border-[#333] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C5A880]"
-                required
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-[#C5A880] mb-2 uppercase tracking-wider">
-                Slug URL *
+                Slug URL <span className="text-[#666]">(auto depuis le nom FR)</span>
               </label>
               <input
                 type="text"
@@ -321,7 +351,6 @@ export const AdminProductForm = () => {
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="gamouze-majestic"
                 className="w-full bg-[#1C1C1C] border border-[#333] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C5A880]"
-                required
               />
             </div>
 
@@ -344,7 +373,7 @@ export const AdminProductForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-xs font-medium text-[#C5A880] mb-2 uppercase tracking-wider">
-                Prix de base (MAD) *
+                Prix de base (MAD) <span className="text-[#666]">(auto = variante par défaut)</span>
               </label>
               <input
                 type="number"
@@ -352,7 +381,6 @@ export const AdminProductForm = () => {
                 onChange={(e) => setBasePrice(e.target.value)}
                 placeholder="520"
                 className="w-full bg-[#1C1C1C] border border-[#333] px-3 py-2 text-xs text-white focus:outline-none focus:border-[#C5A880]"
-                required
               />
             </div>
 
