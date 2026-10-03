@@ -216,7 +216,7 @@ export const ProductDetail = () => {
 
           {/* Short Description */}
           <p className="text-sm text-brand-muted font-light leading-relaxed">
-            {product.description[language] || product.description.fr}
+            {product.description?.[language] || product.description?.fr || ''}
           </p>
 
           {/* Volume Selector */}
@@ -228,7 +228,7 @@ export const ProductDetail = () => {
               <span className="text-xs text-brand-gold font-medium">{selectedVolume}</span>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {product.volumes.map((vol) => {
+              {(product.volumes || []).map((vol) => {
                 const volPrice = product.volumePrices?.[vol] ?? product.price;
                 const isSelected = selectedVolume === vol;
                 return (
@@ -360,7 +360,9 @@ export const ProductDetail = () => {
                   {t('product.topNotes')}
                 </span>
                 <p className="text-xs text-brand-muted font-light">
-                  {product.notes.top[language]?.join(' • ') || product.notes.top.fr.join(' • ')}
+                  {product.notes?.top?.[language]?.join(' • ') ||
+                    product.notes?.top?.fr?.join(' • ') ||
+                    '—'}
                 </p>
               </div>
 
@@ -370,7 +372,9 @@ export const ProductDetail = () => {
                   {t('product.heartNotes')}
                 </span>
                 <p className="text-xs text-brand-muted font-light">
-                  {product.notes.heart[language]?.join(' • ') || product.notes.heart.fr.join(' • ')}
+                  {product.notes?.heart?.[language]?.join(' • ') ||
+                    product.notes?.heart?.fr?.join(' • ') ||
+                    '—'}
                 </p>
               </div>
 
@@ -380,7 +384,9 @@ export const ProductDetail = () => {
                   {t('product.baseNotes')}
                 </span>
                 <p className="text-xs text-brand-muted font-light">
-                  {product.notes.base[language]?.join(' • ') || product.notes.base.fr.join(' • ')}
+                  {product.notes?.base?.[language]?.join(' • ') ||
+                    product.notes?.base?.fr?.join(' • ') ||
+                    '—'}
                 </p>
               </div>
             </div>

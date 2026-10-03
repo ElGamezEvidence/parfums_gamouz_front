@@ -30,23 +30,68 @@ function buildLocalizedName(apiProduct) {
   };
 }
 
+function toNoteList(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+/** Notes olfactives : { top: { fr: [], en: [], ar: [] }, heart, base } */
 function buildNotes(apiProduct) {
-  if (apiProduct.notes && typeof apiProduct.notes === 'object') {
+  if (
+    apiProduct.notes?.top?.fr ||
+    apiProduct.notes?.top?.en ||
+    (apiProduct.notes?.top && !Array.isArray(apiProduct.notes.top))
+  ) {
     return apiProduct.notes;
   }
 
-  const toList = (value) => {
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string' && value.trim()) {
-      return value.split(',').map((s) => s.trim()).filter(Boolean);
-    }
-    return [];
-  };
+  const fromTrans = (field) => ({
+    fr: toNoteList(apiProduct.translations?.fr?.[field] ?? apiProduct[field]),
+    en: toNoteList(apiProduct.translations?.en?.[field] ?? apiProduct[field]),
+    ar: toNoteList(apiProduct.translations?.ar?.[field] ?? apiProduct[field]),
+  });
 
+  if (apiProduct.translations?.fr || apiProduct.translations?.en) {
+    return {
+      top: fromTrans('topNotes'),
+      heart: fromTrans('heartNotes'),
+      base: fromTrans('baseNotes'),
+    };
+  }
+
+  const flat = toNoteList(apiProduct.topNotes);
   return {
-    top: toList(apiProduct.topNotes),
-    heart: toList(apiProduct.heartNotes),
-    base: toList(apiProduct.baseNotes),
+    top: { fr: flat, en: flat, ar: flat },
+    heart: {
+      fr: toNoteList(apiProduct.heartNotes),
+      en: toNoteList(apiProduct.heartNotes),
+      ar: toNoteList(apiProduct.heartNotes),
+    },
+    base: {
+      fr: toNoteList(apiProduct.baseNotes),
+      en: toNoteList(apiProduct.baseNotes),
+      ar: toNoteList(apiProduct.baseNotes),
+    },
+  };
+}
+
+function buildLocalizedDescription(apiProduct) {
+  if (apiProduct.description && typeof apiProduct.description === 'object') {
+    return apiProduct.description;
+  }
+  const pick = (locale) =>
+    apiProduct.translations?.[locale]?.fullDescription ||
+    apiProduct.translations?.[locale]?.shortDescription ||
+    apiProduct.fullDescription ||
+    apiProduct.shortDescription ||
+    '';
+  return {
+    fr: pick('fr'),
+    en: pick('en'),
+    ar: pick('ar'),
   };
 }
 
@@ -73,19 +118,31 @@ export function normalizeProductFromApi(apiProduct) {
   variants.forEach((v) => {
     if (v.volume) volumePrices[v.volume] = v.price;
   });
+  const volumes =
+    apiProduct.volumes?.length > 0
+      ? apiProduct.volumes
+      : variants.map((v) => v.volume).filter(Boolean);
+
+  const reviewList = Array.isArray(apiProduct.reviews) ? apiProduct.reviews : [];
+  const ratingFromReviews =
+    reviewList.length > 0
+      ? reviewList.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviewList.length
+      : null;
 
   return {
     ...apiProduct,
     category,
     name: buildLocalizedName(apiProduct),
-    description: apiProduct.description || {
-      fr: apiProduct.shortDescription || apiProduct.fullDescription || '',
-      en: apiProduct.shortDescription || apiProduct.fullDescription || '',
-      ar: apiProduct.shortDescription || apiProduct.fullDescription || '',
-    },
+    description: buildLocalizedDescription(apiProduct),
     notes: buildNotes(apiProduct),
-    defaultVolume: defaultVariant?.volume || '50ml',
+    volumes: volumes.length ? volumes : ['50ml'],
+    defaultVolume: defaultVariant?.volume || volumes[0] || '50ml',
     volumePrices: Object.keys(volumePrices).length ? volumePrices : apiProduct.volumePrices,
+    rating: apiProduct.rating ?? ratingFromReviews ?? 5,
+    reviews:
+      typeof apiProduct.reviews === 'number'
+        ? apiProduct.reviews
+        : reviewList.length,
     price: Number(apiProduct.price ?? defaultVariant?.price ?? 0),
     oldPrice:
       apiProduct.oldPrice != null
