@@ -7,6 +7,13 @@ function normalizeApiUrl(url) {
   return String(url).trim().replace(/\/$/, '');
 }
 
+/** Origine publique de l’API (sans `/api/v1`) — sert les URLs `/uploads/...`. */
+export function getPublicMediaOrigin() {
+  const base = getApiBaseUrl();
+  if (!base) return '';
+  return base.replace(/\/api\/v1\/?$/i, '');
+}
+
 /** URL effective (après initApiConfig en production). */
 export function getApiBaseUrl() {
   if (resolvedBaseUrl) return resolvedBaseUrl;

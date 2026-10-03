@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -7,14 +7,18 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
 import { Price } from '../common/Price';
 import { Rating } from '../common/Rating';
-import { applyImageFallback } from '../../utils/productImages';
+import { applyImageFallback, resolveProductImageUrl } from '../../utils/productImages';
 
 export const ProductCard = ({ product }) => {
   const { language, t } = useLanguage();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToast } = useToast();
-  const [imgSrc, setImgSrc] = useState(product.image);
+  const [imgSrc, setImgSrc] = useState(() => resolveProductImageUrl(product.image));
+
+  useEffect(() => {
+    setImgSrc(resolveProductImageUrl(product.image));
+  }, [product.id, product.image]);
 
   const productName = product.name[language] || product.name.fr;
   const isFavorite = isInWishlist(product.id);

@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Images produits (API Railway) servies en same-origin pour la boutique / admin Netlify
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://parfumsgamouzback-production.up.railway.app/uploads/:splat"
+  status = 200
+  force = true
+
 # React Router (SPA) — évite la page 404 Netlify au refresh / lien direct
 [[redirects]]
   from = "/*"

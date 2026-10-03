@@ -1,3 +1,16 @@
+import { resolveProductImageUrl } from './productImages.js';
+
+function resolveImageList(images) {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((item) => {
+      if (typeof item === 'string') return resolveProductImageUrl(item);
+      if (item?.url) return resolveProductImageUrl(item.url);
+      return '';
+    })
+    .filter(Boolean);
+}
+
 const GENDER_TO_CATEGORY = {
   men: 'men',
   women: 'women',
@@ -129,6 +142,12 @@ export function normalizeProductFromApi(apiProduct) {
       ? reviewList.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviewList.length
       : null;
 
+  const resolvedImages = resolveImageList(apiProduct.images);
+  const primaryImage =
+    resolveProductImageUrl(apiProduct.image) ||
+    resolvedImages[0] ||
+    '';
+
   return {
     ...apiProduct,
     category,
@@ -150,14 +169,11 @@ export function normalizeProductFromApi(apiProduct) {
         : apiProduct.oldPrice != null
           ? Number(apiProduct.oldPrice)
           : null,
-    image:
-      apiProduct.image ||
-      (Array.isArray(apiProduct.images) ? apiProduct.images[0] : '') ||
-      '',
-    images: Array.isArray(apiProduct.images)
-      ? apiProduct.images.filter(Boolean)
-      : apiProduct.image
-        ? [apiProduct.image]
+    image: primaryImage,
+    images: resolvedImages.length
+      ? resolvedImages
+      : primaryImage
+        ? [primaryImage]
         : [],
     inStock: variants.some((v) => v.inStock !== false && (v.stockQuantity ?? 1) > 0),
   };

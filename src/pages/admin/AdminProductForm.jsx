@@ -12,7 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
-import { applyImageFallback } from '../../utils/productImages';
+import { applyImageFallback, resolveProductImageUrl } from '../../utils/productImages';
 
 function slugifyFromName(name) {
   return (
@@ -802,7 +802,7 @@ export const AdminProductForm = () => {
                   }`}
                 >
                   <img
-                    src={img.url}
+                    src={resolveProductImageUrl(img.url)}
                     alt=""
                     className="w-full aspect-[3/4] object-cover"
                     onError={applyImageFallback}
