@@ -28,6 +28,11 @@ export const adminService = {
     return res.data;
   },
 
+  async deleteProduct(id) {
+    const res = await api.delete(`/admin/products/${id}`);
+    return res.data;
+  },
+
   /** Téléverse une image produit (JPEG, PNG, WebP, GIF — max 5 Mo) */
   async uploadProductImage(file) {
     const formData = new FormData();

@@ -6,10 +6,8 @@ import {
   Filter,
   Package,
   Edit,
-  AlertCircle,
   Eye,
-  CheckCircle2,
-  Boxes,
+  Trash2,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
@@ -19,6 +17,7 @@ export const AdminProducts = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -44,6 +43,27 @@ export const AdminProducts = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     loadProducts();
+  };
+
+  const handleDelete = async (product) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement « ${product.name} » (SKU ${product.sku}) ?\n\nCette action est irréversible. Les commandes passées conservent l'historique sans lien produit.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(product.id);
+    setError('');
+    try {
+      await adminService.deleteProduct(product.id);
+      setProducts((prev) => prev.filter((item) => item.id !== product.id));
+    } catch (err) {
+      const msg =
+        err.response?.data?.error?.message ||
+        'Impossible de supprimer ce produit.';
+      setError(msg);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -212,6 +232,15 @@ export const AdminProducts = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
+                        <button
+                          type="button"
+                          title="Supprimer"
+                          disabled={deletingId === p.id}
+                          onClick={() => handleDelete(p)}
+                          className="p-1.5 text-[#888] hover:text-red-400 transition-colors disabled:opacity-40"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
