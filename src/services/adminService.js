@@ -13,6 +13,11 @@ export const adminService = {
     return res.data.data;
   },
 
+  async getProduct(id) {
+    const res = await api.get(`/admin/products/${id}`);
+    return res.data.data;
+  },
+
   async createProduct(productData) {
     const res = await api.post('/admin/products', productData);
     return res.data.data;

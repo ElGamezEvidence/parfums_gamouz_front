@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -48,6 +48,7 @@ export const AdminProductForm = () => {
 
   const [activeTab, setActiveTab] = useState('fr'); // 'fr', 'en', 'ar'
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEdit);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -106,6 +107,76 @@ export const AdminProductForm = () => {
   const [images, setImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!isEdit || !id) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      setInitialLoading(true);
+      setError('');
+      try {
+        const p = await adminService.getProduct(id);
+        if (cancelled) return;
+
+        setSku(p.sku || '');
+        setSlug(p.slug || '');
+        setBasePrice(p.basePrice != null ? String(p.basePrice) : '');
+        setSalePrice(p.salePrice != null ? String(p.salePrice) : '');
+        setGenderCategory(p.genderCategory || 'UNISEX');
+        setStatus(p.status || 'PUBLISHED');
+        setIsFeatured(Boolean(p.isFeatured));
+        setIsBestSeller(Boolean(p.isBestSeller));
+        setIsNew(Boolean(p.isNew));
+
+        if (p.translations) {
+          setTranslations((prev) => ({
+            fr: { ...prev.fr, ...(p.translations.fr || {}) },
+            en: { ...prev.en, ...(p.translations.en || {}) },
+            ar: { ...prev.ar, ...(p.translations.ar || {}) },
+          }));
+        }
+
+        if (p.variants?.length) {
+          setVariants(
+            p.variants.map((v) => ({
+              id: v.id,
+              volume: v.volume,
+              price: String(v.price ?? ''),
+              salePrice: v.salePrice != null ? String(v.salePrice) : '',
+              sku: v.sku || '',
+              stockQuantity: v.stockQuantity ?? 0,
+              isDefault: Boolean(v.isDefault),
+            }))
+          );
+        }
+
+        if (p.images?.length) {
+          setImages(
+            p.images.map((img) => ({
+              url: img.url,
+              isPrimary: Boolean(img.isPrimary),
+            }))
+          );
+        } else {
+          setImages([]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err.response?.data?.error?.message ||
+              'Impossible de charger le produit pour modification.'
+          );
+        }
+      } finally {
+        if (!cancelled) setInitialLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isEdit]);
 
   const handleTranslationChange = (locale, field, value) => {
     setTranslations((prev) => ({
@@ -240,6 +311,7 @@ export const AdminProductForm = () => {
         isNew,
         translations,
         variants: variants.map((v) => ({
+          ...(v.id ? { id: v.id } : {}),
           volume: v.volume,
           price: Number(v.price),
           salePrice: v.salePrice ? Number(v.salePrice) : null,
@@ -274,6 +346,14 @@ export const AdminProductForm = () => {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="max-w-5xl mx-auto py-20 text-center text-[#8E8881] text-sm">
+        Chargement du produit…
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 font-sans">

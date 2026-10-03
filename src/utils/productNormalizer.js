@@ -143,15 +143,22 @@ export function normalizeProductFromApi(apiProduct) {
       typeof apiProduct.reviews === 'number'
         ? apiProduct.reviews
         : reviewList.length,
-    price: Number(apiProduct.price ?? defaultVariant?.price ?? 0),
+    price: Number(defaultVariant?.price ?? apiProduct.price ?? 0),
     oldPrice:
-      apiProduct.oldPrice != null
-        ? Number(apiProduct.oldPrice)
-        : defaultVariant?.oldPrice != null
-          ? Number(defaultVariant.oldPrice)
+      defaultVariant?.oldPrice != null
+        ? Number(defaultVariant.oldPrice)
+        : apiProduct.oldPrice != null
+          ? Number(apiProduct.oldPrice)
           : null,
-    image: apiProduct.image || apiProduct.images?.[0] || '',
-    images: apiProduct.images?.length ? apiProduct.images : apiProduct.image ? [apiProduct.image] : [],
+    image:
+      apiProduct.image ||
+      (Array.isArray(apiProduct.images) ? apiProduct.images[0] : '') ||
+      '',
+    images: Array.isArray(apiProduct.images)
+      ? apiProduct.images.filter(Boolean)
+      : apiProduct.image
+        ? [apiProduct.image]
+        : [],
     inStock: variants.some((v) => v.inStock !== false && (v.stockQuantity ?? 1) > 0),
   };
 }
