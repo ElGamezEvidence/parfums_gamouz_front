@@ -268,6 +268,9 @@ export const AdminProductForm = () => {
         }));
         return [...prev, ...added];
       });
+      setSuccess(
+        'Images importées. Cliquez sur « Enregistrer le parfum » pour les publier sur la boutique.'
+      );
     } catch (err) {
       const msg =
         err.response?.data?.error?.message ||
@@ -749,7 +752,9 @@ export const AdminProductForm = () => {
             <div>
               <h2 className="font-serif text-lg text-white">4. Galerie Visuelle & Photos</h2>
               <p className="text-[11px] text-[#8E8881] mt-1">
-                Importez depuis votre ordinateur (max 5 Mo) ou collez une URL distante.
+                Importez depuis votre ordinateur (max 5 Mo) ou collez une URL distante. Puis
+                enregistrez le produit. En production Railway, configurez Cloudinary pour des
+                images permanentes.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
