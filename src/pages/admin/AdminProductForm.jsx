@@ -265,6 +265,7 @@ export const AdminProductForm = () => {
         const added = uploaded.map((item, idx) => ({
           url: item.url,
           filename: item.filename,
+          storage: item.storage,
           isPrimary: !hasPrimary && idx === 0 && prev.length === 0,
         }));
         return [...prev, ...added];
@@ -828,9 +829,12 @@ export const AdminProductForm = () => {
                       Principale
                     </span>
                   )}
-                  {img.url?.includes('/uploads/products/') && (
-                    <span className="absolute top-2 end-2 text-[8px] bg-red-900/80 text-red-100 px-1.5 py-0.5 max-w-[90%] truncate">
-                      Fichier Railway — utiliser Cloudinary si 404
+                  {img.storage === 'local' && (
+                    <span
+                      className="absolute top-2 end-2 text-[8px] bg-amber-900/85 text-amber-100 px-1.5 py-0.5 max-w-[90%] leading-tight"
+                      title="Après un redeploy Railway, réimportez ou configurez Cloudinary (CLOUDINARY_*)."
+                    >
+                      Stockage Railway — Cloudinary recommandé
                     </span>
                   )}
                 </div>
