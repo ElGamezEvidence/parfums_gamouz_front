@@ -3,6 +3,14 @@ import api from './api';
 const STORAGE_KEY = 'gamouze_orders';
 const LAST_ORDER_KEY = 'gamouze_last_order';
 
+/** API attend COD | ONLINE ; le checkout utilise cod | card | transfer */
+function normalizePaymentMethod(method) {
+  const key = String(method || 'cod').toLowerCase();
+  if (key === 'cod') return 'COD';
+  if (['online', 'card', 'transfer'].includes(key)) return 'ONLINE';
+  return 'COD';
+}
+
 export const orderService = {
   // Create order via backend API
   async createOrder(orderData) {
@@ -25,7 +33,7 @@ export const orderService = {
           quantity: i.quantity,
         })),
         couponCode: orderData.couponCode || undefined,
-        paymentMethod: orderData.paymentMethod || 'COD',
+        paymentMethod: normalizePaymentMethod(orderData.paymentMethod),
       };
 
       const res = await api.post('/orders', payload);
